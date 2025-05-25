@@ -264,6 +264,7 @@ class BooksStream(ActivityStream):
                 | Q(quotation__book__parent_work__id__in=books)
                 | Q(review__book__parent_work__id__in=books)
                 | Q(mention_books__parent_work__id__in=books)
+                | Q(user=user.id)
             )
             .distinct()
         )
@@ -275,6 +276,10 @@ class BooksStream(ActivityStream):
             user,
             privacy_levels=["public"],
         )
+        .filter(
+            user=user.id
+        )
+        .distinct()
 
         book_comments = statuses.filter(Q(comment__book__parent_work=work))
         book_quotations = statuses.filter(Q(quotation__book__parent_work=work))
@@ -287,7 +292,7 @@ class BooksStream(ActivityStream):
         self.bulk_add_objects_to_store(book_mentions, self.stream_id(user.id))
 
     def remove_book_statuses(self, user, book):
-        """add statuses about a book to a user's feed"""
+        """remove statuses about a book from a user's feed"""
         work = book.parent_work
         statuses = models.Status.privacy_filter(
             user,
